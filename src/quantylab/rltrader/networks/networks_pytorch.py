@@ -172,6 +172,7 @@ class LSTMNetwork(Network):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+
     @staticmethod
     def get_network_head(inp, output_dim):
         return torch.nn.Sequential(
@@ -188,9 +189,29 @@ class LSTMNetwork(Network):
             torch.nn.Linear(32, output_dim),
         )
 
+    # def predict(self, sample):
+    #     sample = np.array(sample).reshape((-1, self.num_steps, self.input_dim))
+    #     return super().predict(sample)
+    
     def predict(self, sample):
-        sample = np.array(sample).reshape((-1, self.num_steps, self.input_dim))
-        return super().predict(sample)
+        with self.lock:
+            self.model.eval()
+            with torch.no_grad():
+                # 리스트를 numpy 배열로 변환
+                sample_array = np.array(sample)
+                # 예상하는 입력 차원으로 reshape
+                sample_array = sample_array.reshape((-1, self.num_steps, self.input_dim))
+                # numpy 배열의 shape 로깅
+                # print(f"Original sample array shape: {sample_array.shape}")
+                # numpy 배열을 torch 텐서로 변환
+                x = torch.from_numpy(sample_array).float().to(device)
+                pred = self.model(x).detach().cpu().numpy()
+                pred = pred.flatten()
+            return pred
+
+
+
+        
 
 
 class LSTMModule(torch.nn.LSTM):
